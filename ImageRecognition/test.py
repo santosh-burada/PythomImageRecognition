@@ -1,7 +1,7 @@
 import cv2
 import face_recognition
 
-imgSantosh = face_recognition.load_image_file('Images/SANTOSH.jpg')
+imgSantosh = face_recognition.load_image_file('Images/santosh.jpg')
 imgSantosh = cv2.cvtColor(imgSantosh, cv2.COLOR_BGR2RGB)
 
 imgSantoshTest = face_recognition.load_image_file('Images/SANTOSH-TEST.jpg')
