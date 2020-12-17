@@ -10,6 +10,57 @@ print("For load-1")
 
 n = int(input("[0/1]"))
 
+
+def ObjectDetectP1():
+    global WidthHeightTarget, cap, classNames, net
+    WidthHeightTarget = 320
+    cap = cv2.VideoCapture(0)
+    classesFile = "E:\PycharmProjects\/attendence\Yolo-Obj\coco.names"
+    classNames = []
+    with open(classesFile, 'rt') as f:
+        classNames = f.read().rstrip('\n').split('\n')
+    modelConfiguration = "E:\PycharmProjects\/attendence\Yolo-Obj\/320\yolov3-320.cfg"
+    modelWeights = "E:\PycharmProjects\/attendence\Yolo-Obj\/320\yolov3.weights"
+    net = cv2.dnn.readNetFromDarknet(modelConfiguration, modelWeights)
+    net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+    net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+def ObjectDetectionP2(c):
+    blob = cv2.dnn.blobFromImage(img, 1 / 255, (WidthHeightTarget, WidthHeightTarget), [0, 0, 0], 1, crop=False)
+    net.setInput(blob)
+    layersNames = net.getLayerNames()
+    outputNames = [(layersNames[i[0] - 1]) for i in net.getUnconnectedOutLayers()]
+    outputs = net.forward(outputNames)
+    findObjects(outputs, img,c)
+def findObjects(outputs, img,c):
+        hT, wT, cT = img.shape
+        bbox = []
+        classIds = []
+        confs = []
+        for output in outputs:
+            for detection in output:
+                scores = detection[5:]
+                classId = np.argmax(scores)
+                confidence = scores[classId]
+                # higher the confidence value means it identifies correctly.
+                if confidence > 0.6:
+                    w, h = int(detection[2] * wT), int(detection[3] * hT)
+                    x, y = int((detection[0] * wT) - w / 2), int((detection[1] * hT) - h / 2)
+                    bbox.append([x, y, w, h])
+                    classIds.append(classId)
+                    confs.append(float(confidence))
+        # According to my testings greater the nms_threshold more overlap bounding boxes appear
+        # which is good to detect the mobile phones if they overlap with faces.
+        indices = cv2.dnn.NMSBoxes(bbox, confs, 0.6, nms_threshold=0.6)
+
+        for i in indices:
+            # print(i,"i")
+            print(c)
+            i = i[0]
+            print(classNames[classIds[i]])
+            if (classNames[classIds[i]]) == "cell phone":
+                cv2.imwrite("E:\PycharmProjects\/attendence\FraudFraud.png" + str(c) + ".png", img)
+
+
 if n:
     os.chdir("E:\PycharmProjects\/attendence\MainImages")
     images = []
@@ -53,13 +104,16 @@ if n:
     with open("E:\PycharmProjects\/attendence\imgNames.txt", "wb") as fp:  # Pickling
         pickle.dump(imgNames, fp)
 else:
-    cap = cv2.VideoCapture(0)
+    ObjectDetectP1()
+    c=0
     while True:
         success,img = cap.read()
-
+        cv2.imshow("Image", img)
+        c+=1
+        ObjectDetectionP2(c)
         imgInput = cv2.resize(img, (0, 0), None, 0.25, 0.25)
         imgInput = cv2.cvtColor(imgInput, cv2.COLOR_BGR2RGB)
-        cv2.imshow("input", imgInput)
+
 
         # cv2.imshow("input image", imgInput)
         try:
